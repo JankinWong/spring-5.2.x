@@ -24,6 +24,8 @@ public class IocTest {
 		 * Bean后置处理器初始化：AbstractApplicationContext#refresh#registerBeanPostProcessors
 		 */
 
+
+
 		ApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:applicationContext.xml");
 		LagouBean lagouBean = applicationContext.getBean(LagouBean.class);
 		System.out.println(lagouBean);
