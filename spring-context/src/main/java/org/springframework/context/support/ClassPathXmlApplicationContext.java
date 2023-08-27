@@ -141,7 +141,7 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
 		super(parent);
 		//设置本地的配置信息
 		setConfigLocations(configLocations);
-		//完成spring容器的初始化
+		//通过加载资源配置、解析,生成BeanDefination,完成spring容器的初始化
 		if (refresh) {
 			refresh();
 		}
