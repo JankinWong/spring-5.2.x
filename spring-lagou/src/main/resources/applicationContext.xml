@@ -18,24 +18,56 @@
 <!--	</bean>-->
 
 
-	<bean id="myBeanFactoryPostProcessor" class="com.lagou.edu.MyBeanFactoryPostProcessor"/>
-	<bean id="myBeanPostProcessor" class="com.lagou.edu.MyBeanPostProcessor"/>
+<!--	<bean id="myBeanFactoryPostProcessor" class="com.lagou.edu.MyBeanFactoryPostProcessor"/>-->
+<!--	<bean id="myBeanPostProcessor" class="com.lagou.edu.MyBeanPostProcessor"/>-->
 
 
-	<bean id="lagouBean" class="com.lagou.edu.LagouBean">
-	</bean>
+<!--	<bean id="lagouBean" class="com.lagou.edu.LagouBean">-->
+<!--	</bean>-->
 
 
 	<!--aop配置-->
 	<!--横切逻辑-->
-	<!--<bean id="logUtils" class="com.lagou.edu.LogUtils">
-	</bean>
+<!--	<bean id="logUtils" class="com.lagou.edu.LogUtils">-->
+<!--	</bean>-->
 
-	<aop:config>
-		<aop:aspect ref="logUtils">
-			<aop:before method="beforeMethod" pointcut="execution(public void com.lagou.edu.LagouBean.print())"/>
-		</aop:aspect>
-	</aop:config>-->
+<!--	<aop:config>-->
+<!--		<aop:aspect ref="logUtils">-->
+<!--			<aop:before method="beforeMethod" pointcut="execution(public void com.lagou.edu.LagouBean.print())"/>-->
+<!--		</aop:aspect>-->
+<!--	</aop:config>-->
+
+<!--	<bean id="AopLog" class="com.lagou.edu.aop.aspectj.AopLog">-->
+<!--	</bean>-->
+
+<!--	<aop:config>-->
+<!--		&lt;!&ndash; 引用xmlAspect作为切面 &ndash;&gt;-->
+<!--		<aop:aspect ref="AopLog">-->
+<!--			&lt;!&ndash; 定义切点 &ndash;&gt;-->
+<!--			<aop:pointcut id="log" expression="execution(public * com.lagou.edu.log.aop.controller.*Controller.*(..))"/>-->
+<!--			&lt;!&ndash; 定义通知，引入切点 &ndash;&gt;-->
+<!--			<aop:before method="beforeLog" pointcut-ref="log"/>-->
+<!--			<aop:after method="afterLog" pointcut-ref="log"/>-->
+<!--			<aop:around method="aroundLog" pointcut-ref="log"/>-->
+<!--		</aop:aspect>-->
+<!--	</aop:config>-->
+
+
+	       <bean id="person" class="com.lagou.edu.Person">
+
+			   <property name="name" value="wzy"/>
+			   <property name="id" value="1"/>
+			   <property name="address" ref="address"/>
+			</bean>
+
+<!--	        <bean id="address" class="com.lagou.edu.Address">-->
+<!--				  <property name="city" value="beijing"/>-->
+<!--				  <property name="street" value="xinjiang"/>-->
+<!--			</bean>-->
+	<bean id="address" class="com.lagou.edu.Address">
+		<property name="city" value="zz"/>
+		<property name="street" value="AB"/>
+	</bean>
 
 
 </beans>

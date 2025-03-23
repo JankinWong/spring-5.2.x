@@ -51,6 +51,9 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	/**
+	 * 是DefaultListableBeanFactory的父接口
+	 */
 	private final BeanDefinitionRegistry registry;
 
 	@Nullable
@@ -210,6 +213,9 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 	 * @see #loadBeanDefinitions(org.springframework.core.io.Resource)
 	 * @see #loadBeanDefinitions(org.springframework.core.io.Resource[])
 	 */
+	//AbstractBeanDefinitionReader的loadBeanDefinitions方法主要做了两件事
+	//首先，调用资源加载器的获取资源方法resourceLoader.getResource(location)，获取到要加载的资源。
+	//其次，真正执行加载功能是其子类XmlBeanDefinitionReader的loadBeanDefinitions方法。
 	public int loadBeanDefinitions(String location, @Nullable Set<Resource> actualResources) throws BeanDefinitionStoreException {
 		//通过ResourceLoader完成对资源文件的定位
 		ResourceLoader resourceLoader = getResourceLoader();
@@ -217,11 +223,13 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 			throw new BeanDefinitionStoreException(
 					"Cannot load bean definitions from location [" + location + "]: no ResourceLoader available");
 		}
-
+		// 模式匹配类型的解析器，这种方式是加载多个满足匹配条件的资源
 		if (resourceLoader instanceof ResourcePatternResolver) {
 			// Resource pattern matching available.
 			try {
+				// 获取到要加载的资源
 				Resource[] resources = ((ResourcePatternResolver) resourceLoader).getResources(location);
+				// 委派调用其子类XmlBeanDefinitionReader的方法，实现加载功能
 				int count = loadBeanDefinitions(resources);
 				if (actualResources != null) {
 					Collections.addAll(actualResources, resources);
@@ -238,6 +246,7 @@ public abstract class AbstractBeanDefinitionReader implements BeanDefinitionRead
 		}
 		else {
 			// Can only load single resources by absolute URL.
+			// 只能通过绝对路径URL加载单个资源.
 			Resource resource = resourceLoader.getResource(location);
 			int count = loadBeanDefinitions(resource);
 			if (actualResources != null) {

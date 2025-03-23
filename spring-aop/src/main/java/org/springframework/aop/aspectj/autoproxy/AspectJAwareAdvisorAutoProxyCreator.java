@@ -65,10 +65,14 @@ public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProx
 	 * advisor should run first. "On the way out" of a join point, the highest
 	 * precedence advisor should run last.
 	 */
+	//.不同的 AspectJ 根据 @Order 排序
+	//.同一个 AspectJ 中不同 Advisor 的排序，优先级如下：
+	//AspectJAfterThrowingAdvice > AspectJAfterReturningAdvice > AspectJAfterAdvice > AspectJAroundAdvice > AspectJMethodBeforeAdvice
 	@Override
 	protected List<Advisor> sortAdvisors(List<Advisor> advisors) {
 		List<PartiallyComparableAdvisorHolder> partiallyComparableAdvisors = new ArrayList<>(advisors.size());
 		for (Advisor advisor : advisors) {
+			// 使用 AspectJPrecedenceComparator 比较器
 			partiallyComparableAdvisors.add(
 					new PartiallyComparableAdvisorHolder(advisor, DEFAULT_PRECEDENCE_COMPARATOR));
 		}
@@ -81,6 +85,8 @@ public class AspectJAwareAdvisorAutoProxyCreator extends AbstractAdvisorAutoProx
 			return result;
 		}
 		else {
+			// AbstractAdvisorAutoProxyCreator
+			// 使用 AnnotationAwareOrderComparator 比较器，通过 @Order 注解
 			return super.sortAdvisors(advisors);
 		}
 	}

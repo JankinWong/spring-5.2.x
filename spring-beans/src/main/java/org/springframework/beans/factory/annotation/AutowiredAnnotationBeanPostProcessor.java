@@ -255,7 +255,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 	@Override
 	@Nullable
-	public Constructor<?>[] determineCandidateConstructors(Class<?> beanClass, final String beanName)
+	public Constructor<?>[]    determineCandidateConstructors(Class<?> beanClass, final String beanName)
 			throws BeanCreationException {
 
 		// Let's check for lookup methods here...
@@ -301,6 +301,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 				if (candidateConstructors == null) {
 					Constructor<?>[] rawCandidates;
 					try {
+						//获取此Bean的所有构造器
 						rawCandidates = beanClass.getDeclaredConstructors();
 					}
 					catch (Throwable ex) {
@@ -308,8 +309,11 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 								"Resolution of declared constructors on bean Class [" + beanClass.getName() +
 								"] from ClassLoader [" + beanClass.getClassLoader() + "] failed", ex);
 					}
+					//最终适用的构造器集合
 					List<Constructor<?>> candidates = new ArrayList<>(rawCandidates.length);
+					//存放依赖注入的required=true的构造器
 					Constructor<?> requiredConstructor = null;
+					//存放默认构造器
 					Constructor<?> defaultConstructor = null;
 					Constructor<?> primaryConstructor = BeanUtils.findPrimaryConstructor(beanClass);
 					int nonSyntheticConstructors = 0;
@@ -320,7 +324,9 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 						else if (primaryConstructor != null) {
 							continue;
 						}
+						//查找当前构造器上的注解
 						MergedAnnotation<?> ann = findAutowiredAnnotation(candidate);
+						//若没有注解
 						if (ann == null) {
 							Class<?> userClass = ClassUtils.getUserClass(beanClass);
 							if (userClass != beanClass) {
@@ -334,6 +340,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 								}
 							}
 						}
+						//若有注解
 						if (ann != null) {
 							if (requiredConstructor != null) {
 								throw new BeanCreationException(beanName,
@@ -353,7 +360,9 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 							}
 							candidates.add(candidate);
 						}
+						//如果该构造函数上没有注解，再判断构造函数上的参数个数是否为0
 						else if (candidate.getParameterCount() == 0) {
+							//如果没有参数，加入defaultConstructor集合
 							defaultConstructor = candidate;
 						}
 					}
@@ -370,13 +379,18 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 										"default constructor to fall back to: " + candidates.get(0));
 							}
 						}
+						//将适用构造器集合赋值给将要返回的构造器集合
 						candidateConstructors = candidates.toArray(new Constructor<?>[0]);
 					}
+					//如果适用的构造器集合为空，且Bean只有一个构造器并且此构造器参数数量大于0
 					else if (rawCandidates.length == 1 && rawCandidates[0].getParameterCount() > 0) {
+						//就使用此构造器来初始化
 						candidateConstructors = new Constructor<?>[] {rawCandidates[0]};
 					}
+					//如果构造器有两个，且默认构造器不为空
 					else if (nonSyntheticConstructors == 2 && primaryConstructor != null &&
 							defaultConstructor != null && !primaryConstructor.equals(defaultConstructor)) {
+						//使用默认构造器返回
 						candidateConstructors = new Constructor<?>[] {primaryConstructor, defaultConstructor};
 					}
 					else if (nonSyntheticConstructors == 1 && primaryConstructor != null) {

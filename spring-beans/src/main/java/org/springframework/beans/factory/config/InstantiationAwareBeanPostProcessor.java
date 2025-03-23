@@ -70,6 +70,16 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getBeanClass()
 	 * @see org.springframework.beans.factory.support.AbstractBeanDefinition#getFactoryMethodName()
 	 */
+	/**
+	 * 在加载 Bean 的过程中，Bean 实例化的前置处理
+	 * 如果返回的是 null 则不会进行后续的AOP代理，也就是说这个方法用于获取一个 Bean 对象
+	 * 通常这里用于创建 AOP 代理对象，返回的对象不为 null，则会继续调用下面的
+	 * {@link this#postProcessAfterInitialization} 方法进行初始化后置处理
+	 * @param beanClass
+	 * @param beanName
+	 * @return
+	 * @throws BeansException
+	 */
 	@Nullable
 	default Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException {
 		return null;
@@ -89,6 +99,13 @@ public interface InstantiationAwareBeanPostProcessor extends BeanPostProcessor {
 	 * instances being invoked on this bean instance.
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @see #postProcessBeforeInstantiation
+	 */
+	/**
+	 * 在加载 Bean 的过程中，Bean 实例化的后置处理
+	 * @param bean
+	 * @param beanName
+	 * @return
+	 * @throws BeansException
 	 */
 	default boolean postProcessAfterInstantiation(Object bean, String beanName) throws BeansException {
 		return true;

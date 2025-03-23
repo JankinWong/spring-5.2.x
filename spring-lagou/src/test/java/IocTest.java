@@ -1,4 +1,6 @@
 import com.lagou.edu.LagouBean;
+import com.lagou.edu.Person;
+import com.lagou.edu.resolveBeforeInstantiation.BeanInstantiation;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -24,14 +26,19 @@ public class IocTest {
 		 * Bean后置处理器初始化：AbstractApplicationContext#refresh#registerBeanPostProcessors
 		 */
 
-
-
 		ApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:applicationContext.xml");
-		LagouBean lagouBean = applicationContext.getBean(LagouBean.class);
-		System.out.println(lagouBean);
+		Person person = applicationContext.getBean(Person.class);
+		System.out.println("person:"+person);
+		System.out.println("id:"+person.getId());
+		System.out.println("name:"+person.getName());
+		System.out.println("age:"+person.getAge());
+		System.out.println("street:"+person.getAddress().getStreet());
+		System.out.println("city:"+person.getAddress().getCity());
+
+		applicationContext.getBean(Person.class);
+		System.out.println("person:"+person);
+
 	}
-
-
 
 	/**
 	 *  Ioc 容器源码分析基础案例
@@ -42,4 +49,10 @@ public class IocTest {
 		LagouBean lagouBean = applicationContext.getBean(LagouBean.class);
 		lagouBean.print();
 	}
+//	@Test
+//	public void testResolveBeforeInstantiation(){
+//		ApplicationContext applicationContext = new ClassPathXmlApplicationContext("resolveBeforeInstantiation.xml");
+//		BeanInstantiation beanInstantiation = (BeanInstantiation) applicationContext.getBean("beanInstantiation");
+//		beanInstantiation.simple();
+//	}
 }

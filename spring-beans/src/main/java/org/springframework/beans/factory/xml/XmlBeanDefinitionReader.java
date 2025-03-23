@@ -383,16 +383,17 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * @see #doLoadDocument
 	 * @see #registerBeanDefinitions
 	 */
+	//本质上是加载XML配置的Bean
 	//Bean定义资源的载入解析分为以下两个过程：
-	//首先，通过调用XML解析器将Bean定义资源文件转换得到Document对象，但是这些Document对象并没有按照Spring的Bean规则进行解析。这一步是载入的过程
-	//其次，在完成通用的XML解析之后，按照Spring的Bean规则对Document对象进行解析。
+	//首先，通过调用XML解析器将「Bean定义资源文件」转换得到Document对象，但是这些Document对象并没有按照Spring的Bean规则进行解析。这一步是载入的过程
+	//其次，在完成通用的XML解析之后，按照Spring的Bean规则对Document对象进行解析，注册bean信息。
 	protected int doLoadBeanDefinitions(InputSource inputSource, Resource resource)
 			throws BeanDefinitionStoreException {
 
 		try {
-			//1.根据定位的Bean定义资源文件，将其加载读入并转换成为Document对象
+			//1.根据xml文件获取Document实例
 			Document doc = doLoadDocument(inputSource, resource);
-			//2.按照Spring的Bean语义要求将Bean定义资源(已转化为Document对象)解析并转换为容器内部数据结构
+			//2.根据获取的 Document 实例注册 Bean 信息
 			int count = registerBeanDefinitions(doc, resource);
 			if (logger.isDebugEnabled()) {
 				logger.debug("Loaded " + count + " bean definitions from " + resource);
@@ -446,11 +447,15 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * mode, even when something other than {@link #VALIDATION_AUTO} was set.
 	 * @see #detectValidationMode
 	 */
+	//XML 文件的验证模式保证了 XML 文件的正确性
 	protected int getValidationModeForResource(Resource resource) {
+		// 获取指定的验证模式
 		int validationModeToUse = getValidationMode();
 		if (validationModeToUse != VALIDATION_AUTO) {
+			// 如果手动指定，则直接返回
 			return validationModeToUse;
 		}
+		// 通过程序检测
 		int detectedMode = detectValidationMode(resource);
 		if (detectedMode != VALIDATION_AUTO) {
 			return detectedMode;
@@ -458,6 +463,7 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 		// Hmm, we didn't get a clear indication... Let's assume XSD,
 		// since apparently no DTD declaration has been found up until
 		// detection stopped (before finding the document's root tag).
+		// 出现异常，返回 XSD
 		return VALIDATION_XSD;
 	}
 
@@ -510,11 +516,12 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * @see #setDocumentReaderClass
 	 * @see BeanDefinitionDocumentReader#registerBeanDefinitions
 	 */
+	// 按照Spring的Bean语义要求将Bean定义资源解析并转换为容器内部数据结构  也即是 BeanDefinition
 	public int registerBeanDefinitions(Document doc, Resource resource) throws BeanDefinitionStoreException {
 		// 创建BeanDefinitionDocumentReader对象，用来解析Document对象
 		BeanDefinitionDocumentReader documentReader = createBeanDefinitionDocumentReader();
 		int countBefore = getRegistry().getBeanDefinitionCount();
-		// 解析过程入口，这里使用了委派模式，具体的解析实现过程有实现类DefaultBeanDefinitionDocumentReader完成
+		// 解析过程入口，这里使用了委派模式，具体的解析实现过程由实现类DefaultBeanDefinitionDocumentReader完成
 		documentReader.registerBeanDefinitions(doc, createReaderContext(resource));
 		return getRegistry().getBeanDefinitionCount() - countBefore;
 	}

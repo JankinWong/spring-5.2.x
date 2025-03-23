@@ -63,6 +63,7 @@ public abstract aspect AbstractTransactionAspect extends TransactionAspectSuppor
 		clearTransactionManagerCache();
 	}
 
+	//增强逻辑在这，事务也在这实现
 	@SuppressAjWarnings("adviceDidNotMatch")
 	Object around(final Object txObject): transactionalMethodExecution(txObject) {
 		MethodSignature methodSignature = (MethodSignature) thisJoinPoint.getSignature();
@@ -70,6 +71,7 @@ public abstract aspect AbstractTransactionAspect extends TransactionAspectSuppor
 		try {
 			return invokeWithinTransaction(methodSignature.getMethod(), txObject.getClass(), new InvocationCallback() {
 				public Object proceedWithInvocation() throws Throwable {
+					//使用@Around注解时执行ProceedingJoinPoint.proceed()方法
 					return proceed(txObject);
 				}
 			});

@@ -71,6 +71,8 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	private Boolean allowCircularReferences;
 
 	/** Bean factory for this context. */
+	// 内部持有一个实例化的 BeanFactory（DefaultListableBeanFactory）
+	// 以后所有的 BeanFactory 相关的操作其实是委托给这个实例来处理的
 	@Nullable
 	private volatile DefaultListableBeanFactory beanFactory;
 
@@ -125,9 +127,10 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 			closeBeanFactory();
 		}
 		try {
+			// 创建DefaultListableBeanFactory，并调用loadBeanDefinitions(beanFactory)装载bean定义
 			DefaultListableBeanFactory beanFactory = createBeanFactory();
 			beanFactory.setSerializationId(getId());
-			//对IoC容器进行定制化 自定义bean工厂的一些属性（是否覆盖、是否允许循环依赖）
+			//对IoC容器进行定制化 自定义bean工厂的一些属性（是否允许覆盖、是否允许循环依赖）
 			customizeBeanFactory(beanFactory);
 			//加载应用中的BeanDefinitions
 			//这里又使用了一个委派模式，在当前类中只定义了抽象的loadBeanDefinitions方法，具体的实现调用子类容器
@@ -217,9 +220,11 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 */
 	protected void customizeBeanFactory(DefaultListableBeanFactory beanFactory) {
 		if (this.allowBeanDefinitionOverriding != null) {
+			// 是否允许 Bean 定义覆盖
 			beanFactory.setAllowBeanDefinitionOverriding(this.allowBeanDefinitionOverriding);
 		}
 		if (this.allowCircularReferences != null) {
+			// 是否允许 Bean 间的循环依赖
 			beanFactory.setAllowCircularReferences(this.allowCircularReferences);
 		}
 	}

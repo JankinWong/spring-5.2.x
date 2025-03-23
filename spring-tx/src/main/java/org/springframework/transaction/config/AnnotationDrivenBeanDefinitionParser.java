@@ -83,6 +83,7 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 			RootBeanDefinition def = new RootBeanDefinition();
 			def.setBeanClassName(txAspectClassName);
 			def.setFactoryMethodName("aspectOf");
+			//把标签里transaction-manager或transactionManager设置的值配置到bean的成员变量transactionManagerBeanName中
 			registerTransactionManager(element, def);
 			parserContext.registerBeanComponent(new BeanComponentDefinition(def, txAspectBeanName));
 		}
@@ -91,10 +92,12 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 	private void registerJtaTransactionAspect(Element element, ParserContext parserContext) {
 		String txAspectBeanName = TransactionManagementConfigUtils.JTA_TRANSACTION_ASPECT_BEAN_NAME;
 		String txAspectClassName = TransactionManagementConfigUtils.JTA_TRANSACTION_ASPECT_CLASS_NAME;
+		//如果没有注册过该类，就新注册一个class为 AnnotationTransactionAspect 的bean
 		if (!parserContext.getRegistry().containsBeanDefinition(txAspectBeanName)) {
 			RootBeanDefinition def = new RootBeanDefinition();
 			def.setBeanClassName(txAspectClassName);
 			def.setFactoryMethodName("aspectOf");
+			//把标签里transaction-manager或transactionManager设置的值配置到bean的成员变量transactionManagerBeanName中
 			registerTransactionManager(element, def);
 			parserContext.registerBeanComponent(new BeanComponentDefinition(def, txAspectBeanName));
 		}

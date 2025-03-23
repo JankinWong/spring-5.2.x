@@ -221,32 +221,66 @@ public abstract class AopUtils {
 	 * for this bean includes any introductions
 	 * @return whether the pointcut can apply on any method
 	 */
+	//判断 PointcutAdvisor 类型的 Advisor 能够应用于某个 Bean
+	//该方法的处理过程如下：
+	//1.使用 Pointcut 的 ClassFilter 匹配 targetClass，不通过则直接返回 false
+	//2.获取 Pointcut 的 MethodMatcher 方法匹配器，保存至 methodMatcher
+	//3.如果 methodMatcher 为 TrueMethodMatcher，则默认都通过，返回 true
+	//4.如果 methodMatcher 为 IntroductionAwareMethodMatcher，则进行转换，保存至 introductionAwareMethodMatcher
+	//     .AspectJExpressionPointcut 就是 IntroductionAwareMethodMatcher 的实现类
+	//5.获取目标类、以及实现的所有接口，并添加至 classes 集合中
+	//     1.如果不是 java.lang.reflect.Proxy 的子类，则获取 targetClass 目标类的 Class 对象（如果目标类是 CGLIB 代理对象，则获取其父类的 Class 对象，也就得到了目标类）
+	//     2.获取 targetClass 目标类实现的所有接口，如果目标类本身是一个接口，那么就取这个目标类
+	//6.遍历上面的 classes 集合
+	//     1.获取这个 Class 对象的所有方法
+	//     2.遍历上一步获取到的所有方法
+	//     3.使用 methodMatcher 方法匹配器对该方法进行匹配，优先使用 introductionAwareMethodMatcher 方法匹配器，匹配成功则直接返回 true，说明有一个方法满足条件即可
+	//           .AspectJExpressionPointcut 底层就是通过 AspectJ 的表达式处理进行处理的
+	//7.一个方法都没匹配成功则返回 false，表示这个 Advisor 不能应用到这个 Bean 上面
+	//总结下来，PointcutAdvisor 是根据 Pointcut 的 ClassFilter 对目标类进行过滤，
+	//如果通过的话，则通过 MethodMatcher 方法匹配器对目标类的方法进行匹配，有一个方法满足条件就表示这个 PointcutAdvisor 可以应用于目标类
 	public static boolean canApply(Pointcut pc, Class<?> targetClass, boolean hasIntroductions) {
 		Assert.notNull(pc, "Pointcut must not be null");
+		// <1> 使用 ClassFilter 匹配 `targetClass`
 		if (!pc.getClassFilter().matches(targetClass)) {
 			return false;
 		}
 
+		// <2> 获取 MethodMatcher 方法匹配器
 		MethodMatcher methodMatcher = pc.getMethodMatcher();
+		// <3> 如果方法匹配器为 TrueMethodMatcher，则默认都通过
 		if (methodMatcher == MethodMatcher.TRUE) {
 			// No need to iterate the methods if we're matching any method anyway...
 			return true;
 		}
-
+		// <4> 如果方法匹配器为 IntroductionAwareMethodMatcher，则进行转换
+		// AspectJExpressionPointcut 就是 IntroductionAwareMethodMatcher 的实现类
 		IntroductionAwareMethodMatcher introductionAwareMethodMatcher = null;
 		if (methodMatcher instanceof IntroductionAwareMethodMatcher) {
 			introductionAwareMethodMatcher = (IntroductionAwareMethodMatcher) methodMatcher;
 		}
-
+		/*
+		 * <5> 获取目标类、以及实现的所有接口，并添加至 `classes` 集合中
+		 */
 		Set<Class<?>> classes = new LinkedHashSet<>();
+		// <5.1> 如果不是 java.lang.reflect.Proxy 的子类
 		if (!Proxy.isProxyClass(targetClass)) {
+			// 获取目标类的 Class 对象（如果目标类是 CGLIB 代理对象，则获取其父类的 Class 对象，也就得到了目标类）
 			classes.add(ClassUtils.getUserClass(targetClass));
 		}
+		// <5.2> 获取目标类实现的所有接口，如果目标类本身是一个接口，那么就取这个目标类
 		classes.addAll(ClassUtils.getAllInterfacesForClassAsSet(targetClass));
 
+		/*
+		 * <6> 遍历上面的 `classes` 集合
+		 */
 		for (Class<?> clazz : classes) {
+			// <6.1> 获取这个 Class 对象的所有方法
 			Method[] methods = ReflectionUtils.getAllDeclaredMethods(clazz);
+			// <6.2> 遍历上一步获取到的所有方法
 			for (Method method : methods) {
+				// <6.3> 使用方法匹配器对该方法进行匹配，如果匹配成功则直接返回 `true`
+				// AspectJExpressionPointcut 底层就是通过 AspectJ 进行处理的
 				if (introductionAwareMethodMatcher != null ?
 						introductionAwareMethodMatcher.matches(method, targetClass, hasIntroductions) :
 						methodMatcher.matches(method, targetClass)) {
@@ -254,7 +288,7 @@ public abstract class AopUtils {
 				}
 			}
 		}
-
+		// <7> 一个方法都没匹配则返回 `false`，表示这个 Advisor 不能应用到这个 Bean 上面
 		return false;
 	}
 
@@ -280,16 +314,28 @@ public abstract class AopUtils {
 	 * any introductions
 	 * @return whether the pointcut can apply on any method
 	 */
+	// 是否能够应用到当前Bean上面
+	//1.如果 IntroductionAdvisor 类型的 Advisor 则通过 ClassFilter 类过滤器进行判断即可；
+	//2.如果是 PointcutAdvisor 类型的 Advisor 则需要调用 canApply(..) 的重载方法进行判断；
+	//3.否则，没有 Pointcut，也就是没有筛选条件，则都符合条件
 	public static boolean canApply(Advisor advisor, Class<?> targetClass, boolean hasIntroductions) {
 		if (advisor instanceof IntroductionAdvisor) {
+			/*
+			 * 从 IntroductionAdvisor 中获取 ClassFilter 类过滤器，判断这个目标类是否符合条件
+			 */
 			return ((IntroductionAdvisor) advisor).getClassFilter().matches(targetClass);
 		}
 		else if (advisor instanceof PointcutAdvisor) {
+			/*
+			 * 根据 Pointcut 中的 ClassFilter 和 MethodFilter 进行过滤
+			 * 例如 Aspect 的实现类 AspectJExpressionPointcut
+			 */
 			PointcutAdvisor pca = (PointcutAdvisor) advisor;
 			return canApply(pca.getPointcut(), targetClass, hasIntroductions);
 		}
 		else {
 			// It doesn't have a pointcut so we assume it applies.
+			// 否则，没有 Pointcut，也就是没有筛选条件，则都符合条件
 			return true;
 		}
 	}
@@ -302,26 +348,44 @@ public abstract class AopUtils {
 	 * @return sublist of Advisors that can apply to an object of the given class
 	 * (may be the incoming List as-is)
 	 */
+	//该方法的处理过程如下：
+	//1.遍历所有的 Advisor 对象，找到能够应用当前 Bean 的 IntroductionAdvisor 对象，放入 eligibleAdvisors 集合中，需要满足下面两个条件
+	//  .是 IntroductionAdvisor 类型
+	//  .能够应用到当前 Bean 中，通过其 ClassFilter 进行过滤
+	//2.遍历所有的 Advisor 对象，找到能够应用当前 Bean 的 Advisor 对象，放入 eligibleAdvisors 集合中；如果是 IntroductionAdvisor 类型，则会跳过，因为上面已经判断过
+	//3.返回能够应用到当前 Bean 的所有 Advisor 对象
 	public static List<Advisor> findAdvisorsThatCanApply(List<Advisor> candidateAdvisors, Class<?> clazz) {
 		if (candidateAdvisors.isEmpty()) {
 			return candidateAdvisors;
 		}
 		List<Advisor> eligibleAdvisors = new ArrayList<>();
+		/*
+		 * <1> 遍历所有的 Advisor 对象
+		 * 找到能够应用当前 Bean 的 IntroductionAdvisor 对象，放入 `eligibleAdvisors` 集合中
+		 */
 		for (Advisor candidate : candidateAdvisors) {
+			// 如果是 IntroductionAdvisor 类型并且能够应用到当前 Bean 中，通过其 ClassFilter 进行过滤
 			if (candidate instanceof IntroductionAdvisor && canApply(candidate, clazz)) {
 				eligibleAdvisors.add(candidate);
 			}
 		}
 		boolean hasIntroductions = !eligibleAdvisors.isEmpty();
+		/*
+		 * <2> 遍历所有的 Advisor 对象
+		 * 如果是 IntroductionAdvisor 类型，则会跳过，因为上面已经判断过
+		 * 找到能够应用当前 Bean 的 Advisor 对象，放入 `eligibleAdvisors` 集合中
+		 */
 		for (Advisor candidate : candidateAdvisors) {
 			if (candidate instanceof IntroductionAdvisor) {
 				// already processed
 				continue;
 			}
+			// 判断是否能够应用到这个 Bean 上面
 			if (canApply(candidate, clazz, hasIntroductions)) {
 				eligibleAdvisors.add(candidate);
 			}
 		}
+		// <3> 返回能够应用到当前 Bean 的所有 Advisor 对象
 		return eligibleAdvisors;
 	}
 
@@ -334,6 +398,7 @@ public abstract class AopUtils {
 	 * @throws Throwable if thrown by the target method
 	 * @throws org.springframework.aop.AopInvocationException in case of a reflection error
 	 */
+	//通过反射执行目标方法
 	@Nullable
 	public static Object invokeJoinpointUsingReflection(@Nullable Object target, Method method, Object[] args)
 			throws Throwable {
@@ -341,6 +406,7 @@ public abstract class AopUtils {
 		// Use reflection to invoke the method.
 		try {
 			ReflectionUtils.makeAccessible(method);
+			//通过反射执行目标方法
 			return method.invoke(target, args);
 		}
 		catch (InvocationTargetException ex) {

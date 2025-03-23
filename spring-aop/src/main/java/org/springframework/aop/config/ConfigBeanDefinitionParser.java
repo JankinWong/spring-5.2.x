@@ -115,6 +115,7 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 				parseAdvisor(elt, parserContext);
 			}
 			else if (ASPECT.equals(localName)) {
+				//解析aspect
 				parseAspect(elt, parserContext);
 			}
 		}
@@ -264,6 +265,7 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	 * '{@code before}', '{@code after}', '{@code after-returning}',
 	 * '{@code after-throwing}' or '{@code around}'.
 	 */
+	//这个for循环只用来处理<aop:aspect>标签下的<aop:before>、<aop:after>、<aop:after-returning>、<aop:after-throwing method="">、<aop:around method="">这五个标签的
 	private boolean isAdviceNode(Node aNode, ParserContext parserContext) {
 		if (!(aNode instanceof Element)) {
 			return false;
@@ -312,6 +314,10 @@ class ConfigBeanDefinitionParser implements BeanDefinitionParser {
 	 * BeanDefinition with the supplied BeanDefinitionRegistry.
 	 * @return the generated advice RootBeanDefinition
 	 */
+	//方法主要做了三件事：
+	//1.根据织入方式（before、after这些）创建RootBeanDefinition，名为adviceDef即advice定义
+	//2.将上一步创建的RootBeanDefinition写入一个新的RootBeanDefinition，构造一个新的对象，名为advisorDefinition，即advisor定义
+	//3.将advisorDefinition注册到DefaultListableBeanFactory中
 	private AbstractBeanDefinition parseAdvice(
 			String aspectName, int order, Element aspectElement, Element adviceElement, ParserContext parserContext,
 			List<BeanDefinition> beanDefinitions, List<BeanReference> beanReferences) {

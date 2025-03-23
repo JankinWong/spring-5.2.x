@@ -154,6 +154,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	private final List<BeanPostProcessor> beanPostProcessors = new CopyOnWriteArrayList<>();
 
 	/** Indicates whether any InstantiationAwareBeanPostProcessors have been registered. */
+	//是否有InstantiationAwareBeanPostProcessor接口的实现类被注册了
 	private volatile boolean hasInstantiationAwareBeanPostProcessors;
 
 	/** Indicates whether any DestructionAwareBeanPostProcessors have been registered. */
@@ -243,12 +244,15 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			String name, @Nullable Class<T> requiredType, @Nullable Object[] args, boolean typeCheckOnly)
 			throws BeansException {
 
+		// 获取bean对应的beanName
 		String beanName = transformedBeanName(name);
 		Object bean;
 
 		// Eagerly check singleton cache for manually registered singletons.
+		// 先从缓存里查询这个bean是否已经存在
 		Object sharedInstance = getSingleton(beanName);
 		if (sharedInstance != null && args == null) {
+			//如果发生了循环依赖，并且使用三级级缓存里的工厂生产出了对象（当然此时只是半成品的对象实例），就直接返回bean了，不再进行下面的操作
 			if (logger.isTraceEnabled()) {
 				if (isSingletonCurrentlyInCreation(beanName)) {
 					logger.trace("Returning eagerly cached instance of singleton bean '" + beanName +
@@ -258,6 +262,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					logger.trace("Returning cached instance of singleton bean '" + beanName + "'");
 				}
 			}
+			// 无参单例从缓存中获取
+			// 如果是普通 Bean 的话，直接返回 sharedInstance，
+			// 如果是 FactoryBean 的话，返回它创建的那个实例对象
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		}
 
@@ -265,10 +272,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			// Fail if we're already creating this bean instance:
 			// We're assumably within a circular reference.
 			if (isPrototypeCurrentlyInCreation(beanName)) {
+				// 如果**非单例模式**下的 Bean 正在创建，这里又开始创建，表明存在循环依赖，则直接抛出异常
 				throw new BeanCurrentlyInCreationException(beanName);
 			}
 
 			// Check if bean definition exists in this factory.
+			// 如果从当前容器中没有找到对应的 BeanDefinition，则从父容器中加载（如果存在父容器）
 			BeanFactory parentBeanFactory = getParentBeanFactory();
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
@@ -291,23 +300,31 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 
 			if (!typeCheckOnly) {
+				// 将当前bean实例放入alreadyCreated集合里，标识这个bean准备创建了
 				markBeanAsCreated(beanName);
 			}
 
 			try {
+				// 从容器中获取 beanName 相应的 GenericBeanDefinition，并将其转换为 RootBeanDefinition
 				RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
+				// 检查给定的合并的 BeanDefinition
 				checkMergedBeanDefinition(mbd, beanName, args);
 
 				// Guarantee initialization of beans that the current bean depends on.
+				// 处理所依赖的 bean
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {
 					for (String dep : dependsOn) {
+						// 若给定的依赖 bean 已经注册为依赖给定的bean
+						// 循环依赖的情况
 						if (isDependent(beanName, dep)) {
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 									"Circular depends-on relationship between '" + beanName + "' and '" + dep + "'");
 						}
+						//将 `beanName` 与 `dep` 之间依赖的关系进行缓存
 						registerDependentBean(dep, beanName);
 						try {
+							//先创建好依赖的 Bean（重新调用 `getBean(...)` 方法）
 							getBean(dep);
 						}
 						catch (NoSuchBeanDefinitionException ex) {
@@ -318,22 +335,29 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 
 				// Create bean instance.
+				// 创建Bean实例：单例
 				if (mbd.isSingleton()) {
+					//调用getSingleton方法，放入初始化好的对象到一级缓存里
+					//这里是一个lambda函数式接口
+					//在getSingleton方法里面执行singletonFactory.getObject()时才真正执行初始化（createBean）
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
+							//返回的是已经初始化后但还没有放入一级缓存里的bean
 							return createBean(beanName, mbd, args);
 						}
 						catch (BeansException ex) {
 							// Explicitly remove instance from singleton cache: It might have been put there
 							// eagerly by the creation process, to allow for circular reference resolution.
 							// Also remove any beans that received a temporary reference to the bean.
+							// 显示从单例缓存中删除 bean 实例
+							// 因为单例模式下为了解决循环依赖，可能他已经存在了，所以销毁它
 							destroySingleton(beanName);
 							throw ex;
 						}
 					});
 					bean = getObjectForBeanInstance(sharedInstance, name, beanName, mbd);
 				}
-
+				// 创建Bean实例：原型
 				else if (mbd.isPrototype()) {
 					// It's a prototype -> create a new instance.
 					Object prototypeInstance = null;
@@ -346,8 +370,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					}
 					bean = getObjectForBeanInstance(prototypeInstance, name, beanName, mbd);
 				}
-
+				// 创建Bean实例：根据bean的scope创建
 				else {
+					// 从指定的 scope 下创建 bean
 					String scopeName = mbd.getScope();
 					if (!StringUtils.hasLength(scopeName)) {
 						throw new IllegalStateException("No scope name defined for bean '" + beanName + "'");
@@ -958,6 +983,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @see #addBeanPostProcessor
 	 * @see org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessor
 	 */
+	//判断是否有任何InstantiationAwareBeanPostProcessors被注册了
 	protected boolean hasInstantiationAwareBeanPostProcessors() {
 		return this.hasInstantiationAwareBeanPostProcessors;
 	}
@@ -1870,8 +1896,10 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 */
 	protected void registerDisposableBeanIfNecessary(String beanName, Object bean, RootBeanDefinition mbd) {
 		AccessControlContext acc = (System.getSecurityManager() != null ? getAccessControlContext() : null);
+		//如果Bean不是多例且需要在容器关闭时销毁
 		if (!mbd.isPrototype() && requiresDestruction(bean, mbd)) {
 			if (mbd.isSingleton()) {
+				//给当前Bean绑定一个DisposableBeanAdapter
 				// Register a DisposableBean implementation that performs all destruction
 				// work for the given bean: DestructionAwareBeanPostProcessors,
 				// DisposableBean interface, custom destroy method.

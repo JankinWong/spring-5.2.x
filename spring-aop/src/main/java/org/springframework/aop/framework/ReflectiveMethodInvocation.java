@@ -159,30 +159,40 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	@Nullable
 	public Object proceed() throws Throwable {
 		// We start with an index of -1 and increment early.
+		// <1> 如果当前已经执行完的拦截器的位置索引就是最后一个，那么即可执行目标方法
 		if (this.currentInterceptorIndex == this.interceptorsAndDynamicMethodMatchers.size() - 1) {
+			// 执行目标方法（通过底层反射机制）
 			return invokeJoinpoint();
 		}
-
+		// <2> 按顺序获取拦截器
 		Object interceptorOrInterceptionAdvice =
 				this.interceptorsAndDynamicMethodMatchers.get(++this.currentInterceptorIndex);
+		/**
+		 * <3> 如果是 InterceptorAndDynamicMethodMatcher 类型，表示 MethodMatcher 在真正的执行时需要做一些检测
+		 * 参考 {@link DefaultAdvisorChainFactory#getInterceptorsAndDynamicInterceptionAdvice }
+		 */
 		if (interceptorOrInterceptionAdvice instanceof InterceptorAndDynamicMethodMatcher) {
 			// Evaluate dynamic method matcher here: static part will already have
 			// been evaluated and found to match.
 			InterceptorAndDynamicMethodMatcher dm =
 					(InterceptorAndDynamicMethodMatcher) interceptorOrInterceptionAdvice;
 			Class<?> targetClass = (this.targetClass != null ? this.targetClass : this.method.getDeclaringClass());
+			// <3.1> 通过 MethodMatcher 对目标方法进行匹配
 			if (dm.methodMatcher.matches(this.method, targetClass, this.arguments)) {
+				// 匹配通过，则执行这个拦截器，并传递当前对象
 				return dm.interceptor.invoke(this);
 			}
 			else {
 				// Dynamic matching failed.
 				// Skip this interceptor and invoke the next in the chain.
+				// <3.2> 否则，直接跳过这个拦截器
 				return proceed();
 			}
 		}
 		else {
 			// It's an interceptor, so we just invoke it: The pointcut will have
 			// been evaluated statically before this object was constructed.
+			// <4> 否则执行这个拦截器，并传递当前对象
 			return ((MethodInterceptor) interceptorOrInterceptionAdvice).invoke(this);
 		}
 	}
@@ -193,6 +203,7 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 	 * @return the return value of the joinpoint
 	 * @throws Throwable if invoking the joinpoint resulted in an exception
 	 */
+	//通过反射执行目标方法
 	@Nullable
 	protected Object invokeJoinpoint() throws Throwable {
 		return AopUtils.invokeJoinpointUsingReflection(this.target, this.method, this.arguments);
