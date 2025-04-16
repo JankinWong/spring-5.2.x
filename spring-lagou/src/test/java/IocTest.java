@@ -1,8 +1,9 @@
 import com.lagou.edu.LagouBean;
-import com.lagou.edu.Person;
-import com.lagou.edu.resolveBeforeInstantiation.BeanInstantiation;
+import com.lagou.edu.ioc.beans.Address;
+import com.lagou.edu.ioc.beans.Person;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
@@ -26,17 +27,31 @@ public class IocTest {
 		 * Bean后置处理器初始化：AbstractApplicationContext#refresh#registerBeanPostProcessors
 		 */
 
-		ApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:applicationContext.xml");
+//		ApplicationContext applicationContext = new ClassPathXmlApplicationContext("classpath:applicationContext.xml");
+		ApplicationContext applicationContext =  new AnnotationConfigApplicationContext("com.lagou.edu");
 		Person person = applicationContext.getBean(Person.class);
+
+//		Person person = applicationContext.getBean(Person.class);
+		Address address = applicationContext.getBean(Address.class);
 		System.out.println("person:"+person);
+		System.out.println("address:"+address);
+//		person.setAge(18);
+//		person.setName("小马哥");
+//		person.setId(1);
+//		person.setAddress(address);
+//		address.setStreet("北京10胡同");
+//		address.setCity("北京");
 		System.out.println("id:"+person.getId());
 		System.out.println("name:"+person.getName());
 		System.out.println("age:"+person.getAge());
-		System.out.println("street:"+person.getAddress().getStreet());
-		System.out.println("city:"+person.getAddress().getCity());
+		System.out.println("person 包含的 address:"+person.getAddress());
+		System.out.println("street:"+address.getStreet());
+		System.out.println("city:"+address.getCity());
 
-		applicationContext.getBean(Person.class);
-		System.out.println("person:"+person);
+//		applicationContext.getBean(Person.class);
+//		System.out.println("person:"+person);
+//		applicationContext.getBean(Address.class);
+//		System.out.println("address:"+address);
 
 	}
 

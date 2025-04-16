@@ -1,7 +1,9 @@
-package com.lagou.edu;
+package com.lagou.edu.ioc.beans;
 
 
+import org.springframework.stereotype.Component;
 
+@Component
 public class Address {
     private String city;
     private String street;
